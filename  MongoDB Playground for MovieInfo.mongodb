@@ -1,0 +1,49 @@
+// MongoDB Playground
+// To disable this template go to Settings | MongoDB | Use Default Template For Playground.
+// Make sure you are connected to enable completions and to be able to run a playground.
+// Use Ctrl+Space inside a snippet or a string literal to trigger completions.
+ 
+// Select the database to use.
+use('Movie_Stream');
+ 
+//1) Insert data
+db.movieInfo.insertMany([
+{"id":"the+ugly+truth+2009","tmdb_id":"20943","imdb_id":"tt1142988","title":"The Ugly Truth","original_title":"The Ugly Truth","adult":"False","belongs_to_collection":"{}","budget":"38000000","genres":"[{'id': 35, 'name': 'Comedy'}, {'id': 10749, 'name': 'Romance'}]","homepage":"http://www.thetruthisntpretty.com/","original_language":"en","overview":"A romantically challenged morning show producer is reluctantly embroiled in a series of outrageous tests by her chauvinistic correspondent to prove his theories on relationships and help her find love. His clever ploys, however, lead to an unexpected result.","popularity":"8.450799","poster_path":"/xbIEfRy1qLYyChHc3cqaYLIWdVS.jpg","production_companies":"[{'name': 'Lakeshore Entertainment', 'id': 126}, {'name': 'Relativity Media', 'id': 7295}]","production_countries":"[{'iso_3166_1': 'US', 'name': 'United States of America'}]","release_date":"2009-07-24","revenue":"205298907","runtime":"96","spoken_languages":"[{'iso_639_1': 'en', 'name': 'English'}]","status":"Released","vote_average":"6.4","vote_count":"1005"},
+{"id":"character+1997","tmdb_id":"17139","imdb_id":"tt0119448","title":"Character","original_title":"Karakter","adult":"False","belongs_to_collection":"{}","budget":"4500000","genres":"[{'id': 18, 'name': 'Drama'}, {'id': 10769, 'name': 'Foreign'}, {'id': 36, 'name': 'History'}]","homepage":"null","original_language":"nl","overview":"J.W. Katadreuffe is the son of Joba Katadreuffe and A.B. Drevenhaven. Though fully neglected by Joba, Dreverhaven ensures the succesfull career of his son. Mostly unseen, though he sues his son a few times. The son Katadreuffe succeeds, but at great costs.","popularity":"1.221677","poster_path":"/gSJgxWyuAfligoPjw395ea9ZD3v.jpg","production_companies":"[{'name': 'First Floor Features', 'id': 938}, {'name': 'Almerica Films', 'id': 3259}]","production_countries":"[{'iso_3166_1': 'NL', 'name': 'Netherlands'}, {'iso_3166_1': 'BE', 'name': 'Belgium'}]","release_date":"1997-04-17","revenue":"0","runtime":"123","spoken_languages":"[{'iso_639_1': 'nl', 'name': 'Nederlands'}, {'iso_639_1': 'en', 'name': 'English'}, {'iso_639_1': 'fr', 'name': 'Français'}, {'iso_639_1': 'de', 'name': 'Deutsch'}]","status":"Released","vote_average":"7.7","vote_count":"25"}
+]);
+ 
+//2)  Basic Queries
+//show all the movies
+db.movieInfo.find()
+//find a movie with a title
+db.movieInfo.find({title: "Romy and Michele's High School Reunion"})
+//find movie with its genre
+db.movieInfo.find({genres: "[{'id': 35, 'name': 'Comedy'}]"})
+//find movie with and condition
+db.movieInfo.find({$and: [{original_language: "en"},{release_date: {$gt:"2003-06-13"}}]})
+//find movie with or condition
+db.movieInfo.find({$or: [{popularity: {$gt:"8"}},{vote_average: {$gt: "7"}}]})
+ 
+//3) Update
+//add to the movie one filed of budget
+db.movieInfo.updateOne({title: "Character"},  { $set:{budget: "4320000"}})
+//add an actor named "Samuel L. Jackson" to the movie
+db.movieInfo.updateOne({title: "Character"},  {$push: {actors: "Samuel L. Jackson"}})
+ 
+//4) DELETE DOCUMENT
+db.movieInfo.deleteMany({adult: "True"})
+db.movieInfo.deleteOne({title: "Avatar"})
+
+// Build an aggregation to view for movie released in 2014, view revenue of release and not released movies
+const aggregation = [
+ // First Stage: filter the movie of certain year
+  { $match: { release_date: { $gte: '2014-01-01', $lt: '2015-01-01' } } },
+  //Second Stage: only select several fields
+  { $project: { _id: 0, genres: 1, title: 1,revenue:1, } },
+  //Third Stage: make the documents flat by unwind the genres
+  { $unwind: "$genres" },
+ //Fourth Stage: sum the Revenue group by genres
+  { $group: { _id: '$genres', totalRevenue: { $sum: "$revenue" } } }
+];
+
+db.movieInfo.aggregate(aggregation);
